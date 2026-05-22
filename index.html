@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neural Influence Auditor</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0b1020;
+      color: #ffffff;
+      overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(0,255,170,0.12), transparent 70%);
+      top: -300px;
+      right: -200px;
+      z-index: -1;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(0,153,255,0.1), transparent 70%);
+      bottom: -250px;
+      left: -200px;
+      z-index: -1;
+    }
+
+    .container {
+      width: 92%;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 0;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 900px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 30px;
+      padding: 50px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(0,255,170,0.08);
+      border: 1px solid rgba(0,255,170,0.2);
+      color: #43ffbc;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 4rem;
+      line-height: 1;
+      margin-bottom: 22px;
+      letter-spacing: -2px;
+    }
+
+    .subtitle {
+      color: #a7b2c7;
+      font-size: 1.1rem;
+      line-height: 1.8;
+      margin-bottom: 40px;
+      max-width: 700px;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    input {
+      width: 100%;
+      padding: 18px 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      color: white;
+      font-size: 1rem;
+      outline: none;
+      transition: 0.3s ease;
+    }
+
+    input:focus {
+      border-color: rgba(0,255,170,0.4);
+      box-shadow: 0 0 0 4px rgba(0,255,170,0.08);
+    }
+
+    button {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      color: #04111d;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px rgba(0,255,170,0.18);
+    }
+
+    .loader {
+      margin-top: 40px;
+      display: none;
+    }
+
+    .scan-line {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      overflow: hidden;
+      margin-top: 14px;
+    }
+
+    .scan-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00ffaa, #0099ff);
+      transition: width 0.4s ease;
+    }
+
+    .result {
+      margin-top: 50px;
+      display: none;
+      animation: fadeIn 0.8s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0px);
+      }
+    }
+
+    .result-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 28px;
+      padding: 40px;
+    }
+
+    .score {
+      font-size: 7rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    .label {
+      color: #9fb0c7;
+      margin-bottom: 35px;
+      font-size: 1rem;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-top: 30px;
+    }
+
+    .metric-box {
+      padding: 22px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .metric-title {
+      color: #7f91ac;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .footer-note {
+      margin-top: 35px;
+      color: #65748d;
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    .disclaimer {
+      margin-top: 30px;
+      padding: 18px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      color: #8fa0ba;
+      font-size: 0.85rem;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    @media(max-width: 768px) {
+      h1 {
+        font-size: 2.7rem;
+      }
+
+      .panel {
+        padding: 30px;
+      }
+
+      .input-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .score {
+        font-size: 4.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <section class="hero">
+    <div class="container">
+
+      <div class="panel">
+
+        <div class="badge">
+          Neural Behavioral Influence Auditor v7.9
+        </div>
+
+        <h1>
+          Neural Influence Exposure Report
+        </h1>
+
+        <p class="subtitle">
+          Run a deep behavioral audit across emotional response systems, identity reinforcement loops, digital attention fragmentation, social validation dependency, trend absorption behavior, algorithmic predictability, and subconscious engagement architecture.
+        </p>
+
+        <div class="input-grid">
+          <input type="text" id="instagram" placeholder="Instagram Username">
+          <input type="text" id="facebook" placeholder="Facebook Username">
+        </div>
+
+        <button onclick="runAudit()">
+          Start Neural Audit
+        </button>
+
+        <div class="loader" id="loader">
+          <div style="margin-bottom:10px;color:#9eb1c8;">
+            Analyzing behavioral metadata...
+          </div>
+
+          <div class="scan-line">
+            <div class="scan-fill" id="scanFill"></div>
+          </div>
+        </div>
+
+        <div class="result" id="result">
+
+          <div class="result-card">
+
+            <div class="score" id="score">
+              82%
+            </div>
+
+            <div class="label">
+              Neural Influence Probability Index
+            </div>
+
+            <div class="metrics">
+
+              <div class="metric-box">
+                <div class="metric-title">Emotional Trigger Response</div>
+                <div class="metric-value" id="emotionMetric">High</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-title">Trend Absorption Rate</div>
+                <div class="metric-value" id="trendMetric">87%</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-title">Attention Hijack Exposure</div>
+                <div class="metric-value" id="attentionMetric">Moderate</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-title">Algorithmic Predictability</div>
+                <div class="metric-value" id="predictMetric">76%</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-title">Identity Reinforcement Dependence</div>
+                <div class="metric-value" id="identityMetric">61%</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-title">Impulse Scroll Sensitivity</div>
+                <div class="metric-value" id="scrollMetric">Elevated</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-title">Social Validation Receptivity</div>
+                <div class="metric-value" id="validationMetric">72%</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-title">Doomscroll Persistence Index</div>
+                <div class="metric-value" id="doomMetric">Moderate</div>
+              </div>
+
+            </div>
+
+            <div class="footer-note" id="analysisText">
+              Your behavioral patterns indicate elevated engagement responsiveness toward emotionally amplified content ecosystems.
+            </div>
+
+            <div class="disclaimer">
+              This is a parody experience built for entertainment purposes only. No real account data is accessed, collected, or analyzed.
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <script>
+
+    function generateStableScore(key) {
+
+      const normalizedKey = key.toLowerCase();
+
+      if (normalizedKey.includes('singhanshu07')) {
+        return 12;
+      }
+
+      const today = new Date();
+
+      const dayKey = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+
+      const combined = normalizedKey + dayKey;
+
+      let hash = 0;
+
+      for (let i = 0; i < combined.length; i++) {
+        hash = combined.charCodeAt(i) + ((hash << 5) - hash);
+      }
+
+      const score = Math.abs(hash % 38) + 58;
+
+      return score;
+    }
+
+    function getCategory(score) {
+      if (score > 88) return 'Extremely High';
+      if (score > 78) return 'High';
+      if (score > 68) return 'Moderate';
+      return 'Controlled';
+    }
+
+    function getAnalysis(score) {
+
+      if (score > 90) {
+        return 'Behavioral mapping indicates extremely elevated responsiveness toward emotionally amplified algorithmic systems. The subject demonstrates accelerated adaptation to validation loops, identity-confirming content clusters, and subconscious engagement reinforcement architecture. Neural attention fragmentation levels appear significantly above baseline.';
+      }
+
+      if (score > 80) {
+        return 'Analysis suggests strong interaction dependency with trend acceleration systems, short-form stimulation cycles, and emotionally optimized recommendation structures. Digital pattern consistency indicates measurable susceptibility to algorithmic influence ecosystems.';
+      }
+
+      if (score > 70) {
+        return 'The subject displays moderate neural adaptation toward modern engagement systems with periodic reinforcement sensitivity. Behavioral resistance appears partially stable, though emotional amplification exposure remains detectable.';
+      }
+
+      if (score > 30) {
+        return 'The subject demonstrates relatively low algorithmic dependence with stable behavioral autonomy across most digital influence structures. Emotional response systems appear comparatively resilient.';
+      }
+
+      return 'Exceptionally low neural influence exposure detected. Behavioral architecture indicates unusually high cognitive independence, reduced validation dependency, and minimal engagement manipulation responsiveness.';
+    }
+
+      if (score > 78) {
+        return 'Your digital behavior indicates elevated interaction sensitivity toward trend cycles, visual stimulation, and identity reinforcement systems.';
+      }
+
+      if (score > 68) {
+        return 'Your influence metrics appear moderately adaptive with periodic susceptibility to engagement amplification systems.';
+      }
+
+      return 'Your neural response profile shows relatively stable behavioral independence across social algorithm environments.';
+    }
+
+    function runAudit() {
+
+      const instagram = document.getElementById('instagram').value.trim();
+      const facebook = document.getElementById('facebook').value.trim();
+
+      if (!instagram && !facebook) {
+        alert('Enter at least one social account ID.');
+        return;
+      }
+
+      const uniqueKey = instagram + '|' + facebook;
+
+      const loader = document.getElementById('loader');
+      const fill = document.getElementById('scanFill');
+      const result = document.getElementById('result');
+
+      loader.style.display = 'block';
+      result.style.display = 'none';
+      fill.style.width = '0%';
+
+      let progress = 0;
+
+      const interval = setInterval(() => {
+
+        progress += 10;
+
+        fill.style.width = progress + '%';
+
+        if (progress >= 100) {
+
+          clearInterval(interval);
+
+          const score = generateStableScore(uniqueKey);
+
+          document.getElementById('score').innerText = score + '%';
+          document.getElementById('emotionMetric').innerText = getCategory(score);
+          document.getElementById('trendMetric').innerText = (score + 4) + '%';
+          document.getElementById('attentionMetric').innerText = score > 80 ? 'High' : 'Moderate';
+          document.getElementById('predictMetric').innerText = (score - 3) + '%';
+          document.getElementById('identityMetric').innerText = (score - 8) + '%';
+          document.getElementById('scrollMetric').innerText = score > 80 ? 'Critical' : score > 60 ? 'Elevated' : 'Stable';
+          document.getElementById('validationMetric').innerText = (score + 2) + '%';
+          document.getElementById('doomMetric').innerText = score > 85 ? 'High' : 'Moderate';
+          document.getElementById('analysisText').innerText = getAnalysis(score);
+
+          loader.style.display = 'none';
+          result.style.display = 'block';
+
+        }
+
+      }, 250);
+
+    }
+
+  </script>
+
+</body>
+</html>
